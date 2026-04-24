@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D-Druck Bestellungen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #4a5568;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+    .nav-tabs { display: flex; gap: 8px; }
+    .tab-btn {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      padding: 6px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── PAGES ── */
+    .page { display: none; padding: 32px 24px; max-width: 680px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* ── KUNDE PAGE ── */
+    .hero {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeUp 0.5s ease;
+    }
+    .hero h1 { font-size: 36px; font-weight: 800; line-height: 1.1; }
+    .hero h1 em { color: var(--accent); font-style: normal; }
+    .hero p { color: var(--muted); margin-top: 8px; font-family: 'Space Mono', monospace; font-size: 13px; }
+
+    .card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      animation: fadeUp 0.5s ease 0.1s both;
+    }
+    .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: var(--accent2); letter-spacing: 2px; text-transform: uppercase; font-family: 'Space Mono', monospace; }
+
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+    input[type=text], textarea, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: 'Syne', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 16px;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .farben-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .farb-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 6px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg);
+    }
+    .farb-option:hover { border-color: var(--accent); }
+    .farb-option.selected { border-color: var(--accent); background: #1a1030; }
+    .farb-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+    }
+    .farb-name { font-size: 12px; font-family: 'Space Mono', monospace; color: var(--text); text-align: center; }
+
+    .andere-farbe-row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .andere-farbe-row label { margin: 0; white-space: nowrap; }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .btn-primary:hover { background: #6d28d9; transform: translateY(-1px); }
+    .btn-primary:disabled { background: var(--border); color: var(--muted); transform: none; cursor: not-allowed; }
+
+    .success-box {
+      display: none;
+      text-align: center;
+      padding: 40px 24px;
+      animation: fadeUp 0.4s ease;
+    }
+    .success-box .emoji { font-size: 56px; }
+    .success-box h2 { font-size: 24px; margin: 16px 0 8px; }
+    .success-box p { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 13px; }
+    .btn-again {
+      margin-top: 24px;
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 24px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-again:hover { border-color: var(--accent); }
+
+    /* ── ADMIN LOGIN ── */
+    .login-box {
+      max-width: 360px;
+      margin: 60px auto;
+      text-align: center;
+    }
+    .login-box h2 { font-size: 22px; margin-bottom: 24px; }
+    .pw-row { display: flex; gap: 10px; }
+    .pw-row input { margin: 0; flex: 1; }
+    .btn-login {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 12px; font-family: 'Space Mono', monospace; display: none; }
+
+    /* ── ADMIN DASHBOARD ── */
+    #admin-dashboard { display: none; }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .stat-num { font-size: 28px; font-weight: 800; }
+    .stat-label { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 4px; }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      margin-top: 28px;
+    }
+    .section-header h3 { font-size: 14px; color: var(--accent2); letter-spacing: 2px; text-transform: uppercase; font-family: 'Space Mono', monospace; }
+
+    .bestellung-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 10px;
+      transition: all 0.3s;
+    }
+    .bestellung-card.done { border-color: #065f4633; background: #0a1f1599; }
+    .best-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .best-info h4 { font-size: 16px; font-weight: 700; }
+    .best-info p { font-size: 13px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 3px; }
+    .best-date { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+    .best-nachricht { font-size: 13px; color: #94a3b8; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; font-family: 'Space Mono', monospace; }
+
+    .checks-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .check-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .check-btn.on { background: var(--green); border-color: var(--green); color: #fff; }
+    .check-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .del-btn {
+      margin-left: auto;
+      background: none;
+      border: 1.5px solid #2d1515;
+      color: var(--red);
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .del-btn:hover { background: #2d1515; }
+
+    /* Farben-Verwaltung */
+    .farben-verwaltung {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .farben-liste { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .farb-tag {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 20px; padding: 5px 10px;
+      font-family: 'Space Mono', monospace; font-size: 12px;
+    }
+    .farb-tag-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .farb-tag button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 0 0 4px; }
+    .farb-tag button:hover { color: var(--red); }
+    .add-farbe-row { display: flex; gap: 8px; align-items: center; }
+    .add-farbe-row input[type=text] { flex: 1; margin: 0; }
+    .add-farbe-row input[type=color] { width: 44px; height: 44px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--bg); cursor: pointer; padding: 2px; }
+    .btn-add { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 10px 16px; font-family: 'Syne', sans-serif; font-weight: 700; cursor: pointer; font-size: 14px; white-space: nowrap; }
+
+    .empty-state { text-align: center; color: var(--muted); padding: 40px; font-family: 'Space Mono', monospace; font-size: 13px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🖨️ <span>3D</span>Druck</div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showPage('kunde')">Bestellen</button>
+    <button class="tab-btn" onclick="showPage('admin')">Admin</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════ KUNDEN-SEITE ═══════════════════════════════ -->
+<div id="page-kunde" class="page active">
+
+  <div class="hero">
+    <h1>Bestell deinen<br><em>3D-Druck</em></h1>
+    <p>// Füll das Formular aus · ich drucke es für dich</p>
+  </div>
+
+  <div class="card" id="order-form-box">
+    <h2>// Neue Bestellung</h2>
+
+    <label>Dein Name *</label>
+    <input type="text" id="k-name" placeholder="Max Mustermann">
+
+    <label>Was soll ich drucken? *</label>
+    <input type="text" id="k-objekt" placeholder="z.B. Vogel, Schlüsselanhänger...">
+
+    <label>Farbe wählen *</label>
+    <div class="farben-grid" id="farben-grid"></div>
+
+    <div class="andere-farbe-row">
+      <input type="checkbox" id="andere-check" onchange="toggleAndereFarbe(this)">
+      <label for="andere-check" style="cursor:pointer;">Andere Farbe anfragen:</label>
+      <input type="text" id="andere-farbe-input" placeholder="z.B. Türkis" style="display:none; margin:0; flex:1;">
+    </div>
+
+    <label>Anmerkungen (optional)</label>
+    <textarea id="k-nachricht" placeholder="Besondere Wünsche, Größe, etc."></textarea>
+
+    <button class="btn-primary" onclick="bestellungAbsenden()">Bestellung absenden →</button>
+  </div>
+
+  <div class="success-box" id="success-box">
+    <div class="emoji">🎉</div>
+    <h2>Bestellung eingegangen!</h2>
+    <p>Ich melde mich bei dir wenn's fertig ist.</p>
+    <button class="btn-again" onclick="neueBestellung()">Noch eine Bestellung</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ADMIN-SEITE ═══════════════════════════════ -->
+<div id="page-admin" class="page">
+
+  <!-- Login -->
+  <div class="login-box" id="admin-login">
+    <h2>🔒 Admin-Bereich</h2>
+    <div class="pw-row">
+      <input type="password" id="pw-input" placeholder="Passwort" onkeydown="if(event.key==='Enter')login()">
+      <button class="btn-login" onclick="login()">Login</button>
+    </div>
+    <div class="error-msg" id="login-error">❌ Falsches Passwort</div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="admin-dashboard">
+
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card"><div class="stat-num" id="s-gesamt">–</div><div class="stat-label">Gesamt</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--yellow)" id="s-offen">–</div><div class="stat-label">Offen</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--accent2)" id="s-gedruckt">–</div><div class="stat-label">Gedruckt</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--green)" id="s-uebergeben">–</div><div class="stat-label">Übergeben</div></div>
+    </div>
+
+    <!-- Farben -->
+    <div class="section-header">
+      <h3>// Meine Farben</h3>
+    </div>
+    <div class="farben-verwaltung">
+      <div class="farben-liste" id="admin-farben-liste"></div>
+      <div class="add-farbe-row">
+        <input type="text" id="neue-farbe-name" placeholder="Farbname" style="margin:0;">
+        <input type="color" id="neue-farbe-hex" value="#7c3aed">
+        <button class="btn-add" onclick="farbeHinzufuegen()">+ Farbe</button>
+      </div>
+    </div>
+
+    <!-- Bestellungen -->
+    <div class="section-header">
+      <h3>// Bestellungen</h3>
+      <button onclick="ladeDaten()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-family:'Space Mono',monospace;">↻ Neu laden</button>
+    </div>
+    <div id="bestellungen-liste"></div>
+  </div>
+</div>
+
+<script>
+  let adminPw = "";
+  let gewaehlterFarbe = "";
+
+  // ───── NAVIGATION ─────
+  function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    event.target.classList.add('active');
+    if (page === 'kunde') ladeFarbenKunde();
+  }
+
+  // ───── API HELPER ─────
+  async function api(path, method = 'GET', body = null, pw = null) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (pw) opts.headers['x-admin-password'] = pw;
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(path, opts);
+    return res.json();
+  }
+
+  // ───── KUNDE: FARBEN ─────
+  async function ladeFarbenKunde() {
+    const farben = await api('/api/farben');
+    const grid = document.getElementById('farben-grid');
+    grid.innerHTML = farben.map(f => `
+      <div class="farb-option" onclick="waehleFarbe(this, '${f.name}')" data-farbe="${f.name}">
+        <div class="farb-dot" style="background:${f.hex}"></div>
+        <div class="farb-name">${f.name}</div>
+      </div>
+    `).join('');
+  }
+
+  function waehleFarbe(el, name) {
+    document.querySelectorAll('.farb-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    gewaehlterFarbe = name;
+    document.getElementById('andere-check').checked = false;
+    document.getElementById('andere-farbe-input').style.display = 'none';
+  }
+
+  function toggleAndereFarbe(cb) {
+    const inp = document.getElementById('andere-farbe-input');
+    inp.style.display = cb.checked ? 'block' : 'none';
+    if (cb.checked) {
+      document.querySelectorAll('.farb-option').forEach(o => o.classList.remove('selected'));
+      gewaehlterFarbe = '';
+      inp.focus();
+    }
+  }
+
+  // ───── KUNDE: BESTELLUNG ─────
+  async function bestellungAbsenden() {
+    const name = document.getElementById('k-name').value.trim();
+    const objekt = document.getElementById('k-objekt').value.trim();
+    const andereCheck = document.getElementById('andere-check').checked;
+    const andereFarbe = document.getElementById('andere-farbe-input').value.trim();
+    const farbe = andereCheck ? andereFarbe : gewaehlterFarbe;
+    const nachricht = document.getElementById('k-nachricht').value.trim();
+
+    if (!name || !objekt || !farbe) {
+      alert('Bitte Name, Objekt und Farbe ausfüllen!');
+      return;
+    }
+
+    const btn = document.querySelector('.btn-primary');
+    btn.disabled = true;
+    btn.textContent = 'Wird gesendet…';
+
+    const res = await api('/api/bestellungen', 'POST', { name, objekt, farbe, nachricht });
+    if (res.ok) {
+      document.getElementById('order-form-box').style.display = 'none';
+      document.getElementById('success-box').style.display = 'block';
+    } else {
+      alert('Fehler: ' + (res.error || 'Unbekannt'));
+      btn.disabled = false;
+      btn.textContent = 'Bestellung absenden →';
+    }
+  }
+
+  function neueBestellung() {
+    document.getElementById('order-form-box').style.display = 'block';
+    document.getElementById('success-box').style.display = 'none';
+    document.getElementById('k-name').value = '';
+    document.getElementById('k-objekt').value = '';
+    document.getElementById('k-nachricht').value = '';
+    document.querySelectorAll('.farb-option').forEach(o => o.classList.remove('selected'));
+    gewaehlterFarbe = '';
+    document.querySelector('.btn-primary').disabled = false;
+    document.querySelector('.btn-primary').textContent = 'Bestellung absenden →';
+  }
+
+  // ───── ADMIN: LOGIN ─────
+  async function login() {
+    const pw = document.getElementById('pw-input').value;
+    const res = await api('/api/bestellungen', 'GET', null, pw);
+    if (res.error) {
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+    adminPw = pw;
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    ladeDaten();
+  }
+
+  // ───── ADMIN: DATEN ─────
+  async function ladeDaten() {
+    await Promise.all([ladeBestellungen(), ladeStats(), ladeFarbenAdmin()]);
+  }
+
+  async function ladeStats() {
+    const s = await api('/api/stats');
+    document.getElementById('s-gesamt').textContent = s.gesamt || 0;
+    document.getElementById('s-offen').textContent = s.offen || 0;
+    document.getElementById('s-gedruckt').textContent = s.gedruckt || 0;
+    document.getElementById('s-uebergeben').textContent = s.uebergeben || 0;
+  }
+
+  async function ladeBestellungen() {
+    const liste = await api('/api/bestellungen', 'GET', null, adminPw);
+    const container = document.getElementById('bestellungen-liste');
+    if (!liste.length) {
+      container.innerHTML = '<div class="empty-state">📭 Noch keine Bestellungen</div>';
+      return;
+    }
+    container.innerHTML = liste.map(b => {
+      const done = b.bezahlt && b.gedruckt && b.uebergeben;
+      const datum = new Date(b.erstellt_am).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `
+        <div class="bestellung-card ${done ? 'done' : ''}" id="bc-${b.id}">
+          <div class="best-header">
+            <div class="best-info">
+              <h4>${esc(b.name)}</h4>
+              <p>${esc(b.objekt)} · <span style="font-weight:700">${esc(b.farbe)}</span></p>
+            </div>
+            <div class="best-date">${datum}</div>
+          </div>
+          ${b.nachricht ? `<div class="best-nachricht">💬 ${esc(b.nachricht)}</div>` : ''}
+          <div class="checks-row">
+            <button class="check-btn ${b.bezahlt ? 'on' : ''}" onclick="toggle(${b.id}, 'bezahlt', ${b.bezahlt})">
+              <div class="dot"></div>Bezahlt
+            </button>
+            <button class="check-btn ${b.gedruckt ? 'on' : ''}" onclick="toggle(${b.id}, 'gedruckt', ${b.gedruckt})">
+              <div class="dot"></div>Gedruckt
+            </button>
+            <button class="check-btn ${b.uebergeben ? 'on' : ''}" onclick="toggle(${b.id}, 'uebergeben', ${b.uebergeben})">
+              <div class="dot"></div>Übergeben
+            </button>
+            <button class="del-btn" onclick="loeschen(${b.id})">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function toggle(id, feld, aktuell) {
+    await api(`/api/bestellungen/${id}`, 'PATCH', { feld, wert: !aktuell }, adminPw);
+    ladeDaten();
+  }
+
+  async function loeschen(id) {
+    if (!confirm('Bestellung wirklich löschen?')) return;
+    await api(`/api/bestellungen/${id}`, 'DELETE', null, adminPw);
+    ladeDaten();
+  }
+
+  // ───── ADMIN: FARBEN ─────
+  async function ladeFarbenAdmin() {
+    const farben = await api('/api/farben');
+    const liste = document.getElementById('admin-farben-liste');
+    liste.innerHTML = farben.map(f => `
+      <div class="farb-tag">
+        <div class="farb-tag-dot" style="background:${f.hex}"></div>
+        ${esc(f.name)}
+        <button onclick="farbeLoeschen(${f.id})">✕</button>
+      </div>
+    `).join('') || '<span style="color:var(--muted);font-size:13px;font-family:monospace">Noch keine Farben</span>';
+  }
+
+  async function farbeHinzufuegen() {
+    const name = document.getElementById('neue-farbe-name').value.trim();
+    const hex = document.getElementById('neue-farbe-hex').value;
+    if (!name) return;
+    await api('/api/farben', 'POST', { name, hex }, adminPw);
+    document.getElementById('neue-farbe-name').value = '';
+    ladeFarbenAdmin();
+    ladeFarbenKunde();
+  }
+
+  async function farbeLoeschen(id) {
+    await api(`/api/farben/${id}`, 'DELETE', null, adminPw);
+    ladeFarbenAdmin();
+    ladeFarbenKunde();
+  }
+
+  // ───── UTILS ─────
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Start
+  ladeFarbenKunde();
+</script>
+</body>
+</html>
